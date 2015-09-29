@@ -2,7 +2,6 @@ module SeatSaver where
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
-import Html.Events exposing (onClick)
 
 import StartApp exposing (App)
 import Effects exposing (Effects, Never)
@@ -28,7 +27,7 @@ init =
 
 -- UPDATE
 
-type Action = NoOp | SetSeats Model | RequestSeat Seat | UpdateSeat Seat
+type Action = NoOp
 
 
 update : Action -> Model -> (Model, Effects Action)
@@ -36,16 +35,6 @@ update action model =
   case action of
     NoOp ->
       (model, Effects.none)
-    SetSeats seats ->
-      (seats, Effects.none)
-    RequestSeat seat ->
-      (model, sendSeatRequest seat)
-    UpdateSeat seat ->
-      let
-        updateSeat s =
-          if s.seatNo == seat.seatNo then { s | occupied <- seat.occupied } else s
-      in
-        (List.map updateSeat model, Effects.none)
 
 
 -- VIEW
@@ -57,54 +46,7 @@ view address model =
 
 seatItem : Signal.Address Action -> Seat -> Html
 seatItem address seat =
-  let
-    occupiedClass = if seat.occupied then "occupied" else "available"
-  in
-    li [ class ("seat " ++ occupiedClass), onClick address (RequestSeat seat) ] [ text (toString seat.seatNo) ]
-
-
--- PORTS
-
-port seatLists : Signal Model
-
-
-port seatUpdates : Signal Seat
-
-
-port seatRequests : Signal Seat
-port seatRequests =
-  seatRequestsBox.signal
-
-
--- SIGNAL
-
-incomingActions: Signal Action
-incomingActions =
-  Signal.merge seatListsToSet seatsToUpdate
-
-
-seatListsToSet: Signal Action
-seatListsToSet =
-  Signal.map SetSeats seatLists
-
-
-seatsToUpdate: Signal Action
-seatsToUpdate =
-  Signal.map UpdateSeat seatUpdates
-
-
-seatRequestsBox : Signal.Mailbox Seat
-seatRequestsBox =
-  Signal.mailbox (Seat 0 False)
-
-
--- EFFECTS
-
-sendSeatRequest : Seat -> Effects Action
-sendSeatRequest seat =
-  Signal.send seatRequestsBox.address seat
-    |> Effects.task
-    |> Effects.map (always NoOp)
+  li [ class "seat available" ] [ text (toString seat.seatNo) ]
 
 
 -- WIRING
@@ -115,7 +57,7 @@ app =
     { init = init
     , update = update
     , view = view
-    , inputs = [incomingActions]
+    , inputs = []
     }
 
 
